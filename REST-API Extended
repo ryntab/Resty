@@ -1,0 +1,190 @@
+<?php
+/**
+ * Plugin Name: WC Vendors Extended REST-API
+ * Plugin URI: 
+ * Description: Get some ZZzzzz's
+ * Version: 1.0
+ * Author: Ryan Taber
+ * Author URI: 
+ */
+
+function getpostsAPI() {
+	function wl_posts() {
+		$args = [
+			'numberposts' => 99999,
+			'post_type' => 'post'
+		];
+		$posts = get_posts($args);
+		$data = [];
+		$i = 0;
+		foreach($posts as $post) {
+			$data[$i]['id'] = $post->ID;
+			$data[$i]['title'] = $post->post_title;
+			$data[$i]['content'] = $post->post_content;
+			$data[$i]['slug'] = $post->post_name;
+			$data[$i]['featured_image']['thumbnail'] = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+			$i++;
+		}
+		return $data;
+	}
+	function wl_post( $slug ) {
+		$args = [
+			'name' => $slug['slug'],
+			'post_type' => 'post'
+		];
+		$post = get_posts($args);
+		$data['id'] = $post[0]->ID;
+		$data['title'] = $post[0]->post_title;
+		$data['content'] = $post[0]->post_content;
+		$data['slug'] = $post[0]->post_name;
+		$data['featured_image']['thumbnail'] = get_the_post_thumbnail_url($post[0]->ID, 'thumbnail');
+		return $data;
+	}
+	add_action('rest_api_init', function() {
+		register_rest_route('wl/v1', 'posts', [
+			'methods' => 'GET',
+			'callback' => 'wl_posts',
+		]);
+		register_rest_route( 'wl/v1', 'posts/(?P<slug>[a-zA-Z0-9-]+)', array(
+			'methods' => 'GET',
+			'callback' => 'wl_post',
+		) );
+	});
+};
+getpostsAPI();
+
+function getproductsAPI() {
+	function wl_products() {
+		$args = [
+			'numberposts' => 99999,
+			'post_type' => 'product'
+		];
+		$posts = get_posts($args);
+		$data = [];
+		$i = 0;
+		foreach($posts as $post) {
+			$data[$i]['id'] = $post->ID;
+			$data[$i]['title'] = $post->post_title;
+			$data[$i]['content'] = $post->post_content;
+			$data[$i]['slug'] = $post->post_name;
+			$data[$i]['featured_image']['thumbnail'] = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+			$i++;
+		}
+		return $data;
+	}
+	function wl_product( $slug ) {
+		$args = [
+			'name' => $slug['slug'],
+			'post_type' => 'post'
+		];
+		$post = get_posts($args);
+		$data['id'] = $post[0]->ID;
+		$data['title'] = $post[0]->post_title;
+		$data['content'] = $post[0]->post_content;
+		$data['slug'] = $post[0]->post_name;
+		$data['featured_image']['thumbnail'] = get_the_post_thumbnail_url($post[0]->ID, 'thumbnail');
+		return $data;
+	}
+	add_action('rest_api_init', function() {
+		register_rest_route('wl/v1', 'products', [
+			'methods' => 'GET',
+			'callback' => 'wl_products',
+		]);
+		register_rest_route( 'wl/v1', 'products/(?P<slug>[a-zA-Z0-9-]+)', array(
+			'methods' => 'GET',
+			'callback' => 'wl_product',
+		) );
+	});
+};
+getproductsAPI();
+
+function getsingleproductAPI() {
+	function single_product( $slug ) {
+		$args = [
+			'name' => $slug['slug'],
+			'post_type' => 'product'
+		];
+		$post = get_posts($args);
+		$ID = $post[0]->ID;
+
+		//Basic Data
+		$data['title'] = $post[0]->post_title;
+		$data['content'] = $post[0]->post_excerpt;
+		$data['slug'] = $post[0]->post_name;
+		$data['price'] = get_post_meta( $ID, '_regular_price', true);
+
+		// Meta Data
+		$format = get_the_term_list( $ID, 'product_format' );
+		$genre = get_the_term_list( $ID, 'product_genre' );
+		$data['format'] = strip_tags( $format);
+		$data['genre'] = strip_tags( $genre );
+		
+		// Image Data
+		$data['featured_image']['thumbnail'] = get_the_post_thumbnail_url($ID, 'thumbnail');
+		$data['featured_image_thumb']['thumbnail'] = get_the_post_thumbnail_url($ID, 'small-thumb');
+
+		return $data;
+	}
+	add_action('rest_api_init', function() {
+		register_rest_route( 'wc/v1', 'products/(?P<slug>[a-zA-Z0-9-]+)', array(
+			'methods' => 'GET',
+			'callback' => 'single_product',
+		) );
+	});
+};
+getsingleproductAPI();
+
+function getVendorData() {
+	function vendor_data_overview() {
+		$user_id = 515;
+		//$user_id = get_current_user_id();
+		return get_user_by( 'id', $user_id );
+		$recent_products = $store_report->recent_products_table($user_id);
+	};
+	function vendor_data_products() {
+		$user_id = get_current_user_id();
+		$args = [
+			'author' =>  $user_id,
+			'orderby' =>  'post_date',
+			'order' =>  'ASC',
+			'post_type' => 'product',
+			'numberposts' => -1,
+		];
+		$posts = get_posts($args);
+		$data = [];
+		$i = 0;
+		foreach($posts as $post) {
+			$data[$i]['id'] = $post->ID;
+			$data[$i]['title'] = $post->post_title;
+			$data[$i]['content'] = $post->post_content;
+			$data[$i]['slug'] = $post->post_name;
+			$data[$i]['featured_image']['thumbnail'] = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+			$i++;
+		}
+		return $data;
+	}
+
+	add_action('rest_api_init', function() {
+		register_rest_route('vendors-private/data', 'overview', [
+			'methods' => 'GET',
+			'callback' => 'vendor_data_overview',
+		]);
+		register_rest_route('vendors-private/data', 'products', [
+			'methods' => 'GET',
+			'callback' => 'vendor_data_products',
+		]);
+	});
+};
+getVendorData();
+
+function getTracksByID() {
+
+	
+	add_action('rest_api_init', function() {
+		register_rest_route('tracks/data', 'get-tracks', [
+			'methods' => 'GET',
+			'callback' => 'get_single_track',
+		]);
+	});
+};
+getTracksByID();
